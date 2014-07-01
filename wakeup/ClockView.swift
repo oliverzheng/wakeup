@@ -3,13 +3,22 @@ import UIKit
 let clockViewNumberFont = UIFont(name: "HelveticaNeue-Light", size: 32.0)
 let clockViewTouchBufferAroundNumber = 10 as Double
 
+protocol ClockViewDelegate {
+  func touchingTime(view: ClockView, time: ClockTime)
+  func touchedTime(view: ClockView, time: ClockTime)
+}
+
 class ClockView : UIView {
+  var handsView: HandsView
   var clock: Clock!
-  var numberViews = Dictionary<Clock.Number, UILabel>()
-  var currentlyTouchingNumber: Clock.Number?
+  var numberViews = Dictionary<ClockNumber, UILabel>()
+  var firstTouchedNumber: ClockNumber?
+  var currentlyTouchingNumber: ClockNumber?
+  
+  var delegate: ClockViewDelegate?
   
   class var numberSize: CGSize {
-    var largestString = Clock.Number.Twelve.toRaw().description as NSString
+    var largestString = ClockNumber.Twelve.toRaw().description as NSString
     return largestString.sizeWithAttributes([NSFontAttributeName: clockViewNumberFont])
   }
   
@@ -30,17 +39,21 @@ class ClockView : UIView {
   }
 
   init(frame: CGRect) {
+    handsView = HandsView(frame: frame)
+
     super.init(frame: frame)
 
     self.userInteractionEnabled = true
     
-    for number in Clock.Number.allNumbers {
+    for number in ClockNumber.allNumbers {
       var label = ClockView.createNumberLabel()
       label.text = number.toRaw().description
 
       addSubview(label)
       numberViews[number] = label
     }
+    
+    addSubview(handsView)
   }
   
   override func layoutSubviews() {
@@ -70,7 +83,7 @@ class ClockView : UIView {
     return clock.radius - ClockView.numberLength / 2 - clockViewTouchBufferAroundNumber
   }
   
-  func numberFromTouch(touch: UITouch) -> Clock.Number? {
+  func numberFromTouch(touch: UITouch) -> ClockNumber? {
     var location = touch.locationInView(self)
     location.x -= ClockView.clockCenterOffset
     location.y -= ClockView.clockCenterOffset
@@ -90,8 +103,11 @@ class ClockView : UIView {
     let touch = touches.anyObject() as UITouch
     let possibleNumber = numberFromTouch(touch)
     if let number = possibleNumber {
+      firstTouchedNumber = number
       currentlyTouchingNumber = number
       println("touched on \(number.toRaw())")
+      
+      delegate?.touchingTime(self, time: ClockTime(hour: number, minute: number))
     }
   }
 
@@ -106,6 +122,8 @@ class ClockView : UIView {
       if number != currentlyTouchingNumber {
         println("moved to \(number.toRaw())")
         currentlyTouchingNumber = number
+        
+        delegate?.touchingTime(self, time: ClockTime(hour: firstTouchedNumber!, minute: currentlyTouchingNumber))
       }
     }
   }
@@ -118,8 +136,13 @@ class ClockView : UIView {
     let touch = touches.anyObject() as UITouch
     let possibleNumber = numberFromTouch(touch)
     if let number = possibleNumber {
+      currentlyTouchingNumber = number
       println("ended on \(number.toRaw())")
     }
+    
+    delegate?.touchedTime(self, time: ClockTime(hour: firstTouchedNumber!, minute: currentlyTouchingNumber))
+    
+    firstTouchedNumber = nil
     currentlyTouchingNumber = nil
   }
 }

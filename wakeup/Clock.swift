@@ -2,46 +2,9 @@ import CoreGraphics
 
 struct Clock {
 
-  enum Number : Int {
-    case
-    One = 1,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    Ten,
-    Eleven,
-    Twelve
-    
-    static let allNumbers = [One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Eleven, Twelve]
-    
-    static let degreesBetweenNumbers: Double = 30
-    static let radiansBetweenNumbers = degreesBetweenNumbers * M_PI / 180
-    
-    var angleInDegrees: Double {
-      return Double(self.toRaw()) * Number.degreesBetweenNumbers
-    }
-    
-    var angleInRadians: Double {
-      return self.angleInDegrees * M_PI / 180
-    }
-    
-    static func numberFromAngle(radians: Double) -> Number {
-      var number = Int(floor((radians + Number.radiansBetweenNumbers / 2) / Number.radiansBetweenNumbers)) % Number.allNumbers.count
-      if number == 0 {
-        number = 12
-      }
-      return Number.fromRaw(number)!
-    }
-  }
-  
   var radius: Double
   
-  func offSetFromClockCenter(number: Number) -> CGPoint {
+  func offSetFromClockCenter(number: ClockNumber) -> CGPoint {
     let angle = number.angleInRadians
     return CGPoint(x: sin(angle) * radius, y: -cos(angle) * radius)
   }
@@ -54,7 +17,7 @@ struct Clock {
     return sqrt(pow(offset.x, 2) + pow(offset.y, 2))
   }
   
-  func numberFromOffset(offsetFromCenter offset: CGPoint) -> Number? {
+  func numberFromOffset(offsetFromCenter offset: CGPoint) -> ClockNumber? {
     // This is a cartesian angle that goes clockwise
     var angle: Double
 
@@ -82,7 +45,7 @@ struct Clock {
       angle -= M_PI * 2
     }
     
-    return Number.numberFromAngle(angle)
+    return ClockNumber.numberFromAngle(angle)
   }
 }
 
